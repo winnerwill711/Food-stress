@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Wellness" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Wellness Check-In</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f0f14;
+      --surface:    #1a1a24;
+      --surface2:   #22222f;
+      --border:     rgba(255,255,255,0.07);
+      --gold:       #c8a97e;
+      --gold-dim:   rgba(200,169,126,0.15);
+      --gold-glow:  rgba(200,169,126,0.35);
+      --text:       #e8e4dc;
+      --text-dim:   rgba(232,228,220,0.45);
+      --text-mid:   rgba(232,228,220,0.7);
+      --green:      #6dbf8f;
+      --green-dim:  rgba(109,191,143,0.15);
+      --red:        #e07c6c;
+      --radius:     16px;
+      --radius-sm:  10px;
+      font-size: 16px;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .app {
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    }
+
+    .view { display: none; flex-direction: column; flex: 1; }
+    .view.active { display: flex; }
+
+    /* ── Top Nav ──────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 8px;
+    }
+
+    .topbar-brand {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.9;
+    }
+
+    .topbar-nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn.active, .nav-btn:hover {
+      color: var(--text);
+      background: var(--surface2);
+    }
+
+    /* ── Check-In View ────────────────────────────────────── */
+    .checkin-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 20px 32px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .checkin-header {
+      text-align: center;
+      padding: 16px 0 28px;
+    }
+
+    .checkin-greeting {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .checkin-date {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 5px;
+      letter-spacing: 0.03em;
+    }
+
+    .checkin-done-banner {
+      background: var(--green-dim);
+      border: 1px solid rgba(109,191,143,0.25);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* ── Card ─────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    /* ── Scale (1–5) ──────────────────────────────────────── */
+    .scale {
+      display: flex;
+      gap: 8px;
+    }
+
+    .scale-btn {
+      flex: 1;
+      aspect-ratio: 1;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text-mid);
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .scale-btn:hover {
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    .scale-btn.selected {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+      color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold-glow);
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding: 0 2px;
+    }
+
+    .scale-label-text {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Stress scale colors */
+    .scale-stress .scale-btn[data-val="1"].selected { background: rgba(109,191,143,0.15); border-color: #6dbf8f; color: #6dbf8f; }
+    .scale-stress .scale-btn[data-val="2"].selected { background: rgba(109,191,143,0.1); border-color: #8fcfa8; color: #8fcfa8; }
+    .scale-stress .scale-btn[data-val="3"].selected { background: rgba(200,169,126,0.15); border-color: var(--gold); color: var(--gold); }
+    .scale-stress .scale-btn[data-val="4"].selected { background: rgba(224,162,108,0.15); border-color: #e0a26c; color: #e0a26c; }
+    .scale-stress .scale-btn[data-val="5"].selected { background: rgba(224,124,108,0.15); border-color: var(--red); color: var(--red); }
+
+    /* Body feel colors */
+    .scale-body .scale-btn[data-val="1"].selected { background: rgba(224,124,108,0.15); border-color: var(--red); color: var(--red); }
+    .scale-body .scale-btn[data-val="2"].selected { background: rgba(224,162,108,0.15); border-color: #e0a26c; color: #e0a26c; }
+    .scale-body .scale-btn[data-val="3"].selected { background: rgba(200,169,126,0.15); border-color: var(--gold); color: var(--gold); }
+    .scale-body .scale-btn[data-val="4"].selected { background: rgba(109,191,143,0.1); border-color: #8fcfa8; color: #8fcfa8; }
+    .scale-body .scale-btn[data-val="5"].selected { background: rgba(109,191,143,0.15); border-color: #6dbf8f; color: #6dbf8f; }
+
+    /* ── Eat Options ──────────────────────────────────────── */
+    .eat-options {
+      display: flex;
+      gap: 8px;
+    }
+
+    .eat-btn {
+      flex: 1;
+      padding: 14px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text-mid);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .eat-btn .eat-emoji {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 5px;
+    }
+
+    .eat-btn:hover {
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    .eat-btn.selected {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    .eat-btn[data-val="Solid"].selected { background: rgba(109,191,143,0.12); border-color: #6dbf8f; }
+    .eat-btn[data-val="Okay"].selected  { background: rgba(200,169,126,0.15); border-color: var(--gold); }
+    .eat-btn[data-val="Rough"].selected { background: rgba(224,124,108,0.12); border-color: var(--red); }
+
+    /* ── Movement Checkboxes ──────────────────────────────── */
+    .move-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .move-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text-mid);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: left;
+    }
+
+    .move-btn .move-icon {
+      font-size: 20px;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .move-check {
+      margin-left: auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s;
+      flex-shrink: 0;
+    }
+
+    .move-btn:hover {
+      border-color: rgba(200,169,126,0.4);
+      color: var(--text);
+    }
+
+    .move-btn.selected {
+      background: var(--green-dim);
+      border-color: rgba(109,191,143,0.4);
+      color: var(--text);
+    }
+
+    .move-btn.selected .move-check {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .move-btn.selected .move-check::after {
+      content: '';
+      width: 11px;
+      height: 7px;
+      border-left: 2px solid #0f0f14;
+      border-bottom: 2px solid #0f0f14;
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+
+    .move-btn[data-val="Neither"]:hover { border-color: rgba(200,169,126,0.3); }
+
+    /* ── Word Input ───────────────────────────────────────── */
+    .word-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+
+    .word-input::placeholder { color: var(--text-dim); }
+    .word-input:focus { border-color: rgba(200,169,126,0.5); }
+
+    .card-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 8px;
+    }
+
+    /* ── Submit Button ────────────────────────────────────── */
+    .submit-wrap {
+      padding: 8px 20px 24px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 17px;
+      background: var(--gold);
+      border: none;
+      border-radius: var(--radius);
+      color: #0f0f14;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .submit-btn:hover { background: #d4b98e; transform: translateY(-1px); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled {
+      background: var(--surface2);
+      color: var(--text-dim);
+      cursor: default;
+      transform: none;
+    }
+
+    /* ── Success animation ────────────────────────────────── */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      z-index: 100;
+    }
+
+    .success-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .success-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .success-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .success-sub {
+      font-size: 14px;
+      color: var(--text-dim);
+      max-width: 240px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ── Dashboard View ───────────────────────────────────── */
+    .dash-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 20px 32px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .dash-header {
+      padding: 16px 0 20px;
+    }
+
+    .dash-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    .dash-subtitle {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-title { font-size: 17px; font-weight: 600; color: var(--text-mid); margin-bottom: 8px; }
+    .empty-sub { font-size: 14px; line-height: 1.5; }
+
+    /* ── Stat Row ─────────────────────────────────────────── */
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-unit {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 400;
+      margin-left: 3px;
+    }
+
+    .stat-trend {
+      font-size: 12px;
+      margin-top: 4px;
+      color: var(--text-dim);
+    }
+
+    /* ── Insight Card ─────────────────────────────────────── */
+    .insight-card {
+      background: var(--gold-dim);
+      border: 1px solid rgba(200,169,126,0.2);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+
+    .insight-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .insight-text {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    /* ── Chart ────────────────────────────────────────────── */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 80px;
+    }
+
+    .chart-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .chart-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.4s ease;
+    }
+
+    .chart-bar-stress { background: var(--gold); opacity: 0.7; }
+    .chart-bar-body   { background: var(--green); opacity: 0.7; }
+
+    .chart-day {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* ── History List ─────────────────────────────────────── */
+    .history-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .history-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-mid);
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .history-row:last-child { border-bottom: none; }
+
+    .history-date {
+      font-size: 13px;
+      color: var(--text-dim);
+      min-width: 64px;
+    }
+
+    .history-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .chip-stress { background: var(--gold-dim); color: var(--gold); }
+    .chip-body   { background: var(--green-dim); color: var(--green); }
+    .chip-eat    { background: var(--surface2); color: var(--text-mid); }
+
+    .history-word {
+      font-size: 16px;
+      min-width: 24px;
+      text-align: right;
+    }
+
+    /* ── Scrollbar ────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Top Nav -->
+    <div class="topbar">
+      <div class="topbar-brand">Wellness</div>
+      <div class="topbar-nav">
+        <button class="nav-btn active" id="nav-checkin" onclick="showView('checkin')">Check-In</button>
+        <button class="nav-btn" id="nav-dash" onclick="showView('dashboard')">Trends</button>
+      </div>
+    </div>
+
+    <!-- ── Check-In View ── -->
+    <div class="view active" id="view-checkin">
+      <div class="checkin-scroll">
+
+        <div class="checkin-header">
+          <div class="checkin-greeting" id="greeting"></div>
+          <div class="checkin-date" id="today-date"></div>
+        </div>
+
+        <div id="already-done" class="checkin-done-banner" style="display:none">
+          <span>✓</span>
+          <span>You checked in today. Come back tomorrow.</span>
+        </div>
+
+        <!-- Stress -->
+        <div class="card" id="card-stress">
+          <div class="card-label">01 — Stress</div>
+          <div class="card-title">How's your stress today?</div>
+          <div class="scale scale-stress" id="stress-scale">
+            <button class="scale-btn" data-val="1">1</button>
+            <button class="scale-btn" data-val="2">2</button>
+            <button class="scale-btn" data-val="3">3</button>
+            <button class="scale-btn" data-val="4">4</button>
+            <button class="scale-btn" data-val="5">5</button>
+          </div>
+          <div class="scale-labels">
+            <span class="scale-label-text">Calm</span>
+            <span class="scale-label-text">Maxed</span>
+          </div>
+        </div>
+
+        <!-- Food -->
+        <div class="card" id="card-food">
+          <div class="card-label">02 — Nutrition</div>
+          <div class="card-title">How did you eat today?</div>
+          <div class="eat-options">
+            <button class="eat-btn" data-val="Solid" onclick="selectEat(this)">
+              <span class="eat-emoji">🥗</span>Solid
+            </button>
+            <button class="eat-btn" data-val="Okay" onclick="selectEat(this)">
+              <span class="eat-emoji">🍜</span>Okay
+            </button>
+            <button class="eat-btn" data-val="Rough" onclick="selectEat(this)">
+              <span class="eat-emoji">🍕</span>Rough
+            </button>
+          </div>
+        </div>
+
+        <!-- Movement -->
+        <div class="card" id="card-move">
+          <div class="card-label">03 — Movement</div>
+          <div class="card-title">How did you move today?</div>
+          <div class="move-options" id="move-options">
+            <button class="move-btn" data-val="Lifted" onclick="toggleMove(this)">
+              <span class="move-icon">🏋️</span>
+              <span>Lifted</span>
+              <span class="move-check"></span>
+            </button>
+            <button class="move-btn" data-val="Steps" onclick="toggleMove(this)">
+              <span class="move-icon">👟</span>
+              <span>Got my steps</span>
+              <span class="move-check"></span>
+            </button>
+            <button class="move-btn" data-val="Neither" onclick="toggleMove(this)">
+              <span class="move-icon">🛋️</span>
+              <span>Neither</span>
+              <span class="move-check"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Body Feel -->
+        <div class="card" id="card-body">
+          <div class="card-label">04 — Body</div>
+          <div class="card-title">How does your body feel?</div>
+          <div class="scale scale-body" id="body-scale">
+            <button class="scale-btn" data-val="1">1</button>
+            <button class="scale-btn" data-val="2">2</button>
+            <button class="scale-btn" data-val="3">3</button>
+            <button class="scale-btn" data-val="4">4</button>
+            <button class="scale-btn" data-val="5">5</button>
+          </div>
+          <div class="scale-labels">
+            <span class="scale-label-text">Rough</span>
+            <span class="scale-label-text">Great</span>
+          </div>
+        </div>
+
+        <!-- Word / Emoji -->
+        <div class="card" id="card-word">
+          <div class="card-label">05 — Optional</div>
+          <div class="card-title">One word or emoji for today</div>
+          <input
+            class="word-input"
+            id="word-input"
+            type="text"
+            maxlength="32"
+            placeholder="tired, focused, 🌊..."
+            autocomplete="off"
+            autocorrect="off"
+          />
+          <div class="card-hint">Tap to skip — completely optional</div>
+        </div>
+
+      </div>
+
+      <div class="submit-wrap">
+        <button class="submit-btn" id="submit-btn" onclick="submitCheckin()" disabled>
+          Log Today
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Dashboard View ── -->
+    <div class="view" id="view-dashboard">
+      <div class="dash-scroll">
+        <div class="dash-header">
+          <div class="dash-title">Your Patterns</div>
+          <div class="dash-subtitle" id="dash-subtitle">—</div>
+        </div>
+        <div id="dash-content"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="success-overlay">
+    <div class="success-ring">✓</div>
+    <div class="success-title">Logged.</div>
+    <div class="success-sub" id="success-msg">See you tomorrow.</div>
+  </div>
+
+  <script>
+    // ── Data Layer ──────────────────────────────────────────
+    const STORAGE_KEY = 'wellness_entries';
+
+    function loadEntries() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveEntry(entry) {
+      const entries = loadEntries();
+      const idx = entries.findIndex(e => e.date === entry.date);
+      if (idx >= 0) entries[idx] = entry;
+      else entries.push(entry);
+      entries.sort((a, b) => b.date.localeCompare(a.date));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function getTodayEntry() {
+      return loadEntries().find(e => e.date === todayStr()) || null;
+    }
+
+    // ── State ───────────────────────────────────────────────
+    let state = { stress: null, food: null, move: new Set(), body: null };
+
+    // ── Greeting ────────────────────────────────────────────
+    function initCheckin() {
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Good morning.' : hour < 17 ? 'Good afternoon.' : 'Good evening.';
+      document.getElementById('greeting').textContent = greet;
+
+      const d = new Date();
+      document.getElementById('today-date').textContent = d.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+      });
+
+      const done = getTodayEntry();
+      document.getElementById('already-done').style.display = done ? 'flex' : 'none';
+
+      const cards = ['card-stress','card-food','card-move','card-body','card-word'];
+      cards.forEach(id => {
+        document.getElementById(id).style.opacity = done ? '0.45' : '1';
+        document.getElementById(id).style.pointerEvents = done ? 'none' : '';
+      });
+      document.getElementById('submit-btn').style.display = done ? 'none' : '';
+      if (done) document.getElementById('submit-btn').disabled = true;
+    }
+
+    // ── Scale buttons ───────────────────────────────────────
+    document.querySelectorAll('#stress-scale .scale-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#stress-scale .scale-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.stress = parseInt(btn.dataset.val);
+        checkReady();
+      });
+    });
+
+    document.querySelectorAll('#body-scale .scale-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#body-scale .scale-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.body = parseInt(btn.dataset.val);
+        checkReady();
+      });
+    });
+
+    function selectEat(btn) {
+      document.querySelectorAll('.eat-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.food = btn.dataset.val;
+      checkReady();
+    }
+
+    function toggleMove(btn) {
+      const val = btn.dataset.val;
+      if (val === 'Neither') {
+        // Neither is exclusive
+        const wasSelected = btn.classList.contains('selected');
+        document.querySelectorAll('.move-btn').forEach(b => b.classList.remove('selected'));
+        state.move.clear();
+        if (!wasSelected) { btn.classList.add('selected'); state.move.add('Neither'); }
+      } else {
+        // Remove "Neither" if selecting something else
+        const neitherBtn = document.querySelector('.move-btn[data-val="Neither"]');
+        neitherBtn.classList.remove('selected');
+        state.move.delete('Neither');
+        btn.classList.toggle('selected');
+        if (btn.classList.contains('selected')) state.move.add(val);
+        else state.move.delete(val);
+      }
+      checkReady();
+    }
+
+    function checkReady() {
+      const ready = state.stress !== null && state.food !== null && state.move.size > 0 && state.body !== null;
+      document.getElementById('submit-btn').disabled = !ready;
+    }
+
+    // ── Submit ──────────────────────────────────────────────
+    function submitCheckin() {
+      const word = document.getElementById('word-input').value.trim();
+      const entry = {
+        date: todayStr(),
+        stress: state.stress,
+        food: state.food,
+        move: Array.from(state.move),
+        body: state.body,
+        word: word || null,
+        ts: Date.now()
+      };
+      saveEntry(entry);
+
+      const msgs = [
+        "Small check-ins, big picture.",
+        "Consistency builds clarity.",
+        "You showed up. That's what matters.",
+        "One day closer to knowing yourself.",
+        "Data without judgment."
+      ];
+      document.getElementById('success-msg').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+
+      const overlay = document.getElementById('success-overlay');
+      overlay.classList.add('show');
+      setTimeout(() => {
+        overlay.classList.remove('show');
+        initCheckin();
+      }, 2200);
+    }
+
+    // ── Views ───────────────────────────────────────────────
+    function showView(name) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + name).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('nav-' + name).classList.add('active');
+      if (name === 'dashboard') renderDashboard();
+    }
+
+    // ── Dashboard ───────────────────────────────────────────
+    function renderDashboard() {
+      const entries = loadEntries();
+      const el = document.getElementById('dash-content');
+      const subtitle = document.getElementById('dash-subtitle');
+
+      if (entries.length === 0) {
+        subtitle.textContent = 'No check-ins yet';
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🌱</div>
+            <div class="empty-title">Nothing here yet</div>
+            <div class="empty-sub">Complete your first check-in to start seeing patterns.</div>
+          </div>`;
+        return;
+      }
+
+      subtitle.textContent = `${entries.length} day${entries.length === 1 ? '' : 's'} logged`;
+
+      const recent = entries.slice(0, 7).reverse();
+      const all = entries;
+
+      const avgStress = (all.reduce((s, e) => s + e.stress, 0) / all.length).toFixed(1);
+      const avgBody   = (all.reduce((s, e) => s + e.body,   0) / all.length).toFixed(1);
+
+      const foodCounts = { Solid: 0, Okay: 0, Rough: 0 };
+      all.forEach(e => foodCounts[e.food]++);
+      const topFood = Object.entries(foodCounts).sort((a,b) => b[1]-a[1])[0][0];
+
+      let moveCount = 0;
+      all.forEach(e => { if (!e.move.includes('Neither')) moveCount++; });
+      const movePct = Math.round(moveCount / all.length * 100);
+
+      const html = [];
+
+      // Stats row
+      html.push(`<div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Avg Stress</div>
+          <div class="stat-value">${avgStress}<span class="stat-unit">/ 5</span></div>
+          <div class="stat-trend">${all.length} days tracked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Body Feel</div>
+          <div class="stat-value">${avgBody}<span class="stat-unit">/ 5</span></div>
+          <div class="stat-trend">${all.length} days tracked</div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Top Eating</div>
+          <div class="stat-value" style="font-size:20px">${topFood}</div>
+          <div class="stat-trend">${foodCounts[topFood]}/${all.length} days</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Days</div>
+          <div class="stat-value">${movePct}<span class="stat-unit">%</span></div>
+          <div class="stat-trend">${moveCount} of ${all.length} days</div>
+        </div>
+      </div>`);
+
+      // Insight
+      const insight = generateInsight(all);
+      if (insight) {
+        html.push(`<div class="insight-card">
+          <div class="insight-label">Pattern</div>
+          <div class="insight-text">${insight}</div>
+        </div>`);
+      }
+
+      // Chart (last 7 days)
+      if (recent.length >= 3) {
+        const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+        const maxVal = 5;
+        const bars = recent.map(e => {
+          const d = new Date(e.date + 'T12:00:00');
+          const day = days[d.getDay()];
+          const stressH = Math.round((e.stress / maxVal) * 70);
+          const bodyH   = Math.round((e.body   / maxVal) * 70);
+          return `<div class="chart-col">
+            <div style="display:flex;gap:3px;align-items:flex-end;height:70px">
+              <div class="chart-bar chart-bar-stress" style="height:${stressH}px"></div>
+              <div class="chart-bar chart-bar-body"   style="height:${bodyH}px"></div>
+            </div>
+            <div class="chart-day">${day}</div>
+          </div>`;
+        }).join('');
+
+        html.push(`<div class="chart-card">
+          <div class="chart-title">Last ${recent.length} Days</div>
+          <div class="chart-bars">${bars}</div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Stress</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Body Feel</div>
+          </div>
+        </div>`);
+      }
+
+      // Recent history
+      const rows = entries.slice(0, 10).map(e => {
+        const d = new Date(e.date + 'T12:00:00');
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const moveLabel = e.move.join(', ');
+        return `<div class="history-row">
+          <div class="history-date">${label}</div>
+          <div class="history-chips">
+            <span class="chip chip-stress">S:${e.stress}</span>
+            <span class="chip chip-body">B:${e.body}</span>
+            <span class="chip chip-eat">${e.food}</span>
+          </div>
+          <div class="history-word">${e.word || ''}</div>
+        </div>`;
+      }).join('');
+
+      html.push(`<div class="history-card">
+        <div class="history-title">Recent Check-Ins</div>
+        ${rows}
+      </div>`);
+
+      el.innerHTML = html.join('');
+    }
+
+    function generateInsight(entries) {
+      if (entries.length < 3) return null;
+
+      // Check stress vs body correlation
+      const highStressDays = entries.filter(e => e.stress >= 4);
+      const lowBodyOnHighStress = highStressDays.filter(e => e.body <= 2);
+      if (highStressDays.length >= 2 && lowBodyOnHighStress.length / highStressDays.length >= 0.6) {
+        return `On your higher-stress days, your body tends to feel it too. ${lowBodyOnHighStress.length} of your ${highStressDays.length} high-stress days had low body feel — that connection is worth noticing.`;
+      }
+
+      // Check food vs body
+      const solidDays  = entries.filter(e => e.food === 'Solid');
+      const roughDays  = entries.filter(e => e.food === 'Rough');
+      if (solidDays.length >= 2 && roughDays.length >= 2) {
+        const solidAvgBody = solidDays.reduce((s, e) => s + e.body, 0) / solidDays.length;
+        const roughAvgBody = roughDays.reduce((s, e) => s + e.body, 0) / roughDays.length;
+        if (solidAvgBody - roughAvgBody >= 1) {
+          return `When you eat solid, your body feel averages ${solidAvgBody.toFixed(1)} vs ${roughAvgBody.toFixed(1)} on rough days. Food seems to move the needle for you.`;
+        }
+      }
+
+      // Movement insight
+      const activeDays = entries.filter(e => !e.move.includes('Neither'));
+      const restDays   = entries.filter(e => e.move.includes('Neither'));
+      if (activeDays.length >= 2 && restDays.length >= 2) {
+        const activeAvgBody = activeDays.reduce((s, e) => s + e.body, 0) / activeDays.length;
+        const restAvgBody   = restDays.reduce((s,   e) => s + e.body, 0) / restDays.length;
+        if (activeAvgBody - restAvgBody >= 0.8) {
+          return `On days you move, body feel averages ${activeAvgBody.toFixed(1)} compared to ${restAvgBody.toFixed(1)} on rest days. Worth keeping in mind.`;
+        }
+      }
+
+      // Streak
+      const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = new Date(sorted[i-1].date + 'T12:00:00');
+        const curr = new Date(sorted[i].date   + 'T12:00:00');
+        const diff = (prev - curr) / (1000 * 60 * 60 * 24);
+        if (diff === 1) streak++;
+        else break;
+      }
+      if (streak >= 5) return `You're on a ${streak}-day streak. Consistency is the whole game — keep going.`;
+      if (streak >= 3) return `${streak} days in a row. Patterns only show up when you show up.`;
+
+      return `You've logged ${entries.length} days. The longer you track, the clearer the signal.`;
+    }
+
+    // ── Init ────────────────────────────────────────────────
+    initCheckin();
+
+    // ── Service Worker ──────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
