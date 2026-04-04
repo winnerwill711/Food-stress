@@ -133,6 +133,19 @@
       font-weight: 500;
     }
 
+    .edit-today-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid rgba(109,191,143,0.35);
+      border-radius: 20px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
     /* ── Card ─────────────────────────────────────────────── */
     .card {
       background: var(--surface);
@@ -695,6 +708,7 @@
         <div id="already-done" class="checkin-done-banner" style="display:none">
           <span>✓</span>
           <span>You checked in today. Come back tomorrow.</span>
+          <button class="edit-today-btn" onclick="editToday()">Edit</button>
         </div>
 
         <!-- Stress -->
@@ -1129,6 +1143,18 @@
       if (streak >= 3) return `${streak} days in a row. Patterns only show up when you show up.`;
 
       return `You've logged ${entries.length} days. The longer you track, the clearer the signal.`;
+    }
+
+    // ── Edit today ──────────────────────────────────────────
+    function editToday() {
+      // Remove today's stored entry so the form is unlocked
+      const entries = loadEntries().filter(e => e.date !== todayStr());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      // Reset local state
+      state = { stress: null, food: null, move: new Set(), body: null };
+      document.querySelectorAll('.scale-btn, .eat-btn, .move-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('word-input').value = '';
+      initCheckin();
     }
 
     // ── Init ────────────────────────────────────────────────
